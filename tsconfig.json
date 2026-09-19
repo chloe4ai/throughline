@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/domain"
+    },
+    {
+      "path": "./packages/billing"
+    },
+    {
+      "path": "./packages/adherence"
+    },
+    {
+      "path": "./packages/documentation"
+    }
+  ]
+}

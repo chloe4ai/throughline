@@ -1,0 +1,13 @@
+{
+  "name": "@throughline/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node src/server.js" },
+  "dependencies": {
+    "@throughline/domain": "0.1.0",
+    "@throughline/billing": "0.1.0",
+    "@throughline/adherence": "0.1.0",
+    "@throughline/documentation": "0.1.0"
+  }
+}
