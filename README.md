@@ -10,7 +10,7 @@ therapy clinics.**
 
 ---
 
-An outpatient PT clinic cannot set its own prices — Medicare administers the
+An outpatient PT(Physical Therapy) clinic cannot set its own prices — Medicare administers the
 fee schedule and commercial plans price off it. So the only levers left are
 billing the visits it already performed correctly, keeping patients through the
 plan of care, and getting therapists out of the building on time. Throughline
