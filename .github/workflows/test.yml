@@ -18,4 +18,6 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: git diff --exit-code -- docs/ || (echo "docs/ is out of date: run npm run build and commit" && exit 1)
+      - name: Committed docs/ matches the source
+        run: |
+          git diff --exit-code -- docs/ || { echo "docs/ is out of date. Run npm run build and commit the result."; exit 1; }
