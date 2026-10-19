@@ -46,7 +46,9 @@ export function App() {
       <p className={source === 'live' ? 'source live' : 'source'}>
         {source === 'live'
           ? 'Live data from the local API.'
-          : 'Showing a captured snapshot — start the API with npm run api for live data.'}
+          : import.meta.env.DEV
+            ? 'Showing a captured snapshot — start the API with npm run api for live data.'
+            : 'Demo mode: sample clinic data, priced by the real billing engine in your browser.'}
       </p>
 
       <main>

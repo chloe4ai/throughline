@@ -16,7 +16,14 @@ export interface Loaded<T> {
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 
+/**
+ * A production build with no API URL (the GitHub Pages demo) has no server to
+ * reach, so it serves the bundled snapshot without firing doomed requests.
+ */
+const DEMO_MODE = import.meta.env.PROD && !import.meta.env.VITE_API_URL
+
 async function get<T>(path: string, fallback: T): Promise<Loaded<T>> {
+  if (DEMO_MODE) return { data: fallback, source: 'snapshot' }
   try {
     const response = await fetch(`${BASE}${path}`, { signal: AbortSignal.timeout(2500) })
     if (!response.ok) throw new Error(String(response.status))
