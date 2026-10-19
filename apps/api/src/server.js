@@ -1,5 +1,5 @@
 import { createServer } from 'node:http'
-import { priceVisit } from '@throughline/billing'
+import { priceVisit, validateServices } from '@throughline/billing'
 import { serviceLinesFromNote, checkCompliance, hasBlockers } from '@throughline/documentation'
 import { summarizeAdherence } from '@throughline/adherence'
 import { openDatabase } from './db.js'
@@ -52,6 +52,14 @@ const routes = {
 
   /** Price arbitrary minutes without saving anything — the what-if tool. */
   'POST /api/price': ({ body }) => {
+    if (body === null || typeof body !== 'object' || Array.isArray(body) || !Array.isArray(body.services)) {
+      return unprocessable('Request body must be a JSON object with a "services" array.')
+    }
+    try {
+      validateServices(body.services)
+    } catch (error) {
+      return unprocessable(error.message)
+    }
     const payerRow = db.prepare('SELECT * FROM payers WHERE id = ?').get(body.payerId ?? 'medicare')
     if (!payerRow) return notFound('payer')
     const payer = {
@@ -61,7 +69,7 @@ const routes = {
       feeScheduleMultiplier: payerRow.fee_schedule_multiplier,
     }
     return priceVisit({
-      services: body.services ?? [],
+      services: body.services,
       payer,
       benefits: body.benefits ?? { deductibleRemaining: 0, coinsurance: 0.2 },
       discipline: body.discipline ?? 'PT',
@@ -124,6 +132,7 @@ function buildQueueItem(visitId) {
 }
 
 const notFound = (what) => ({ error: `${what} not found`, status: 404 })
+const unprocessable = (message) => ({ error: message, status: 422 })
 
 const server = createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -139,6 +148,7 @@ const server = createServer(async (req, res) => {
     const body = req.method === 'POST' ? await readJson(req) : undefined
     const result = await match.handler({ params: match.params, query: url.searchParams, body })
     if (result && result.status === 404) return void send(res, 404, result)
+    if (result && result.status === 422) return void send(res, 422, { error: result.error })
     send(res, 200, result)
   } catch (error) {
     send(res, 400, { error: error.message })

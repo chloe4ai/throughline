@@ -47,13 +47,36 @@ function isUntimed(line: ServiceLine): boolean {
 }
 
 /**
+ * Collapse lines that share a CPT code into one line per code (minutes and
+ * assistant minutes summed, every other field taken from the first line).
+ * A code is billed once per day with a unit count; two lines for the same
+ * code must price exactly like one line carrying their combined time.
+ */
+export function mergeLinesByCode(lines: ServiceLine[]): ServiceLine[] {
+  const byCode = new Map<string, ServiceLine>()
+  for (const line of lines) {
+    const existing = byCode.get(line.code)
+    if (!existing) {
+      byCode.set(line.code, { ...line })
+      continue
+    }
+    existing.minutes = (existing.minutes ?? 0) + (line.minutes ?? 0)
+    if (existing.assistantMinutes != null || line.assistantMinutes != null) {
+      existing.assistantMinutes = (existing.assistantMinutes ?? 0) + (line.assistantMinutes ?? 0)
+    }
+  }
+  return [...byCode.values()]
+}
+
+/**
  * Allocate units across a day's service lines.
  *
  * Under the Medicare rule the day's total decides how many units exist; those
  * units are then handed out to codes longest-first, which is the allocation
  * CMS describes when leftover minutes have to be assigned to one code.
  */
-export function allocateUnits(lines: ServiceLine[], payer: Pick<Payer, 'unitRule'>): UnitAllocation[] {
+export function allocateUnits(serviceLines: ServiceLine[], payer: Pick<Payer, 'unitRule'>): UnitAllocation[] {
+  const lines = mergeLinesByCode(serviceLines)
   const timed = lines.filter((l) => !isUntimed(l))
   const untimed = lines.filter(isUntimed)
 

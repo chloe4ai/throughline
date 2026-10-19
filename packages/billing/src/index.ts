@@ -1,5 +1,6 @@
-export { allocateUnits, unitsFromTotalMinutes, unitsForSingleCode, type UnitAllocation } from './units.js'
+export { allocateUnits, mergeLinesByCode, unitsFromTotalMinutes, unitsForSingleCode, type UnitAllocation } from './units.js'
 export { applyMppr, MPPR_PRACTICE_EXPENSE_RETAINED, type MpprUnit } from './mppr.js'
 export { decideModifier, DE_MINIMIS_THRESHOLD, ASSISTANT_PAYMENT_RATE, type ModifierDecision } from './modifiers.js'
 export { priceVisit, splitLiability, type ClaimLine, type VisitPricing, type PriceVisitInput } from './engine.js'
 export { feeSchedule, lookup, allowedPerUnit, round2, type FeeScheduleEntry } from './fee-schedule.js'
+export { validateServices } from './validate.js'

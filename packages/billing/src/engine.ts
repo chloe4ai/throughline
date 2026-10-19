@@ -3,6 +3,7 @@ import { allocateUnits, type UnitAllocation } from './units.js'
 import { applyMppr } from './mppr.js'
 import { decideModifier, type ModifierDecision } from './modifiers.js'
 import { lookup, round2 } from './fee-schedule.js'
+import { validateServices } from './validate.js'
 
 /**
  * Compose the rules into one answer: for this visit, on this plan, what will
@@ -55,6 +56,9 @@ export interface PriceVisitInput {
 }
 
 export function priceVisit({ services, payer, benefits, discipline }: PriceVisitInput): VisitPricing {
+  validateServices(services)
+  // allocateUnits merges same-code lines, so each allocation's code is unique
+  // and filtering MPPR units by code below cannot count a unit twice.
   const allocations = allocateUnits(services, payer)
   const warnings: string[] = []
 
