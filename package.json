@@ -9,13 +9,14 @@
   ],
   "type": "module",
   "engines": {
-    "node": ">=22.5"
+    "node": ">=22.13"
   },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
     "build:packages": "tsc -b",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && npm run typecheck:web",
+    "typecheck:web": "tsc --noEmit -p apps/web",
     "api": "npm run build:packages && node apps/api/src/server.js",
     "dev": "npm run build:packages && concurrently -n api,web -c blue,magenta \"npm run api\" \"npm run web\"",
     "web": "npm run dev -w @throughline/web",

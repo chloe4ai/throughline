@@ -71,11 +71,16 @@ A small HTTP layer over SQLite (`apps/api`, node's built-in driver — no native
 dependencies), and a React UI (`apps/web`) whose "what is this visit worth"
 screen imports the *same* engine the server runs, so it cannot drift.
 
+## Where to look first
+
+The rules live in `packages/billing/src/units.ts` (8-minute rule vs. rule of eights) and `mppr.ts`;
+`packages/billing/test/engine.test.ts` shows them composed into a priced visit.
+
 ## Run it
 
 ```bash
 npm install
-npm test           # 52 tests across the rule engines
+npm test           # runs the test suite across the rule engines
 npm run api        # http://localhost:8787 — seeds a demo clinic on first run
 npm run web        # http://localhost:5173
 ```

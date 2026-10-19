@@ -4,3 +4,10 @@ dist/
 .DS_Store
 data/*.db
 .env
+vitest.config.ts.timestamp-*
+*.timestamp-*.mjs
+coverage/
+*.log
+.vite/
+data/*.db-wal
+data/*.db-shm
