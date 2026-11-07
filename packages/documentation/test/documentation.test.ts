@@ -91,6 +91,37 @@ describe('checkCompliance', () => {
     expect(checkCompliance({ ...base, note }).some((f) => f.rule === 'assistant-minutes-exceed-total')).toBe(true)
   })
 
+  it('does not block an evaluation documented with no minutes', () => {
+    const note = signedNote({
+      objective: { interventions: [{ code: '97161', description: 'Initial evaluation', minutes: 0 }] },
+    })
+    const findings = checkCompliance({ ...base, note })
+    expect(findings.some((f) => f.rule === 'zero-minutes')).toBe(false)
+    expect(hasBlockers(findings)).toBe(false)
+  })
+
+  it('still blocks a timed code documented with no minutes', () => {
+    const note = signedNote({
+      objective: { interventions: [{ code: '97110', description: 'x', minutes: 0 }] },
+    })
+    expect(checkCompliance({ ...base, note }).some((f) => f.rule === 'zero-minutes')).toBe(true)
+  })
+
+  it('blocks assistant time on an evaluation', () => {
+    const note = signedNote({
+      objective: { interventions: [{ code: '97162', description: 'Evaluation', minutes: 30, assistantMinutes: 30 }] },
+    })
+    const findings = checkCompliance({ ...base, note })
+    expect(findings.some((f) => f.rule === 'assistant-evaluation' && f.severity === 'blocker')).toBe(true)
+  })
+
+  it('blocks a code that is not on the fee schedule', () => {
+    const note = signedNote({
+      objective: { interventions: [{ code: '99999', description: 'x', minutes: 15 }] },
+    })
+    expect(checkCompliance({ ...base, note }).some((f) => f.rule === 'unknown-code')).toBe(true)
+  })
+
   it('flags an exhausted authorization before the claim denies', () => {
     const findings = checkCompliance({
       ...base, note: signedNote(),
