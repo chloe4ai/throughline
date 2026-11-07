@@ -68,12 +68,16 @@ const routes = {
       appliesAssistantReduction: !!payerRow.applies_assistant_reduction,
       feeScheduleMultiplier: payerRow.fee_schedule_multiplier,
     }
-    return priceVisit({
-      services: body.services,
-      payer,
-      benefits: body.benefits ?? { deductibleRemaining: 0, coinsurance: 0.2 },
-      discipline: body.discipline ?? 'PT',
-    })
+    try {
+      return priceVisit({
+        services: body.services,
+        payer,
+        benefits: body.benefits ?? { deductibleRemaining: 0, coinsurance: 0.2 },
+        discipline: body.discipline ?? 'PT',
+      })
+    } catch (error) {
+      return unprocessable(error.message)
+    }
   },
 
   'GET /api/adherence': () => {
@@ -105,9 +109,17 @@ function buildQueueItem(visitId) {
   const ctx = loadVisitContext(db, visitId)
   if (!ctx) return null
   const services = ctx.note ? serviceLinesFromNote(ctx.note) : []
-  const pricing = priceVisit({
-    services, payer: ctx.payer, benefits: ctx.benefits, discipline: ctx.episode.discipline,
-  })
+  // One visit the engine cannot price (an unknown code, assistant time on an
+  // evaluation) must hold that visit, not take the whole queue down with it.
+  let pricing = null
+  let pricingError = null
+  try {
+    pricing = priceVisit({
+      services, payer: ctx.payer, benefits: ctx.benefits, discipline: ctx.episode.discipline,
+    })
+  } catch (error) {
+    pricingError = error.message
+  }
   const findings = ctx.note
     ? checkCompliance({
         note: ctx.note,
@@ -116,6 +128,9 @@ function buildQueueItem(visitId) {
         visitsSinceProgressNote: ctx.visit.visitsSinceProgressNote,
       })
     : [{ rule: 'note-missing', severity: 'blocker', message: 'No note exists for this visit.' }]
+  if (pricingError) {
+    findings.push({ rule: 'pricing-error', severity: 'blocker', message: `This visit cannot be priced: ${pricingError}` })
+  }
 
   return {
     visitId,
@@ -127,7 +142,7 @@ function buildQueueItem(visitId) {
     services,
     pricing,
     findings,
-    billable: !hasBlockers(findings) && pricing.netAllowed > 0,
+    billable: pricing !== null && !hasBlockers(findings) && pricing.netAllowed > 0,
   }
 }
 

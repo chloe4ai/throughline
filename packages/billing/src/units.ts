@@ -42,8 +42,9 @@ export function unitsForSingleCode(minutes: number): number {
   return Math.floor((minutes - 8) / 15) + 1
 }
 
+/** The fee schedule, not the caller, decides whether a code is timed. */
 function isUntimed(line: ServiceLine): boolean {
-  return line.untimed ?? lookup(line.code).untimed
+  return lookup(line.code).untimed
 }
 
 /**

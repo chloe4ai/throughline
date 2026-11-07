@@ -1,4 +1,5 @@
 import type { Note, ServiceLine, Episode, ISODate } from '@throughline/domain'
+import { feeSchedule } from '@throughline/billing'
 
 /**
  * Documentation is where billing errors are born, so Throughline treats the
@@ -63,10 +64,20 @@ export function checkCompliance(ctx: ComplianceContext): ComplianceFinding[] {
   }
 
   for (const intervention of note.objective.interventions) {
-    if (intervention.minutes <= 0) {
+    const entry = feeSchedule.entries.find((e) => e.code === intervention.code)
+    if (!entry) {
+      findings.push({ rule: 'unknown-code', severity: 'blocker', message: `${intervention.code} is not on the fee schedule, so it cannot be priced.` })
+      continue
+    }
+    // Service-based codes (evaluations, unattended modalities) bill one unit
+    // whatever the time, so a note that records no minutes for them is fine.
+    if (!entry.untimed && intervention.minutes <= 0) {
       findings.push({ rule: 'zero-minutes', severity: 'blocker', message: `${intervention.code} is documented with no time. Timed codes need minutes.` })
     }
-    if ((intervention.assistantMinutes ?? 0) > intervention.minutes) {
+    if ((intervention.assistantMinutes ?? 0) > 0 && feeSchedule.isEvaluation(intervention.code)) {
+      findings.push({ rule: 'assistant-evaluation', severity: 'blocker', message: `${intervention.code} is an evaluation. Only the therapist can furnish it; a PTA or OTA cannot.` })
+    }
+    if (!entry.untimed && (intervention.assistantMinutes ?? 0) > intervention.minutes) {
       findings.push({ rule: 'assistant-minutes-exceed-total', severity: 'blocker', message: `${intervention.code}: assistant minutes exceed total minutes.` })
     }
   }

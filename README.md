@@ -48,8 +48,9 @@ at the boundaries where they break:
 - **Contract math** — percentage of fee schedule, then deductible, then copay
   *or* coinsurance, never both.
 
-The order those are applied in is load-bearing; `docs/ARCHITECTURE.md` explains
-why, and the tests enforce it.
+Two steps in that order are load-bearing: units come first, and the patient's
+share is split only after every reduction. `docs/ARCHITECTURE.md` explains why,
+and the tests check it.
 
 ### Documentation with the compliance checks attached (`packages/documentation`)
 

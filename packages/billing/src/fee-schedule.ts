@@ -39,6 +39,17 @@ const ENTRIES: FeeScheduleEntry[] = [
 
 const BY_CODE = new Map(ENTRIES.map((e) => [e.code, e]))
 
+/**
+ * Evaluations and re-evaluations. Only the therapist can furnish these: a PTA
+ * or OTA may not evaluate, so assistant time on one of these codes is not a
+ * CQ/CO reduction, it is a claim that should not be sent.
+ */
+const EVALUATION_CODES = new Set(['97161', '97162', '97163', '97164'])
+
+export function isEvaluation(code: string): boolean {
+  return EVALUATION_CODES.has(code)
+}
+
 export function lookup(code: string): FeeScheduleEntry {
   const entry = BY_CODE.get(code)
   if (!entry) throw new Error(`Unknown CPT code: ${code}. Add it to the fee schedule before billing it.`)
@@ -53,4 +64,4 @@ export function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100
 }
 
-export const feeSchedule = { lookup, allowedPerUnit, entries: ENTRIES }
+export const feeSchedule = { lookup, allowedPerUnit, isEvaluation, entries: ENTRIES }
