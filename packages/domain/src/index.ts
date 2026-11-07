@@ -57,11 +57,14 @@ export interface Episode {
 export interface ServiceLine {
   /** CPT/HCPCS code, e.g. '97110'. */
   code: string
-  /** Minutes of one-on-one time. Omitted/0 for untimed (service-based) codes. */
+  /** Whole minutes of one-on-one time. 0 for untimed (service-based) codes. */
   minutes: number
   /** Minutes within this line delivered by a PTA/OTA. */
   assistantMinutes?: number
-  /** Untimed codes bill one unit regardless of time. */
+  /**
+   * Untimed codes bill one unit regardless of time. Informational only: the
+   * fee schedule decides, and a value that disagrees with it is rejected.
+   */
   untimed?: boolean
 }
 

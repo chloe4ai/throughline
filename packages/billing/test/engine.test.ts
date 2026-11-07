@@ -59,7 +59,7 @@ describe('priceVisit', () => {
     expect(result.planPays + result.patientResponsibility).toBeCloseTo(result.netAllowed, 2)
   })
 
-  it('stacks MPPR and the assistant reduction in the right order', () => {
+  it('applies MPPR to the second unit and the assistant reduction across the line', () => {
     const result = priceVisit({
       services: [{ code: '97110', minutes: 30, assistantMinutes: 30 }],
       payer: medicare, benefits: metDeductible, discipline: 'PT',
@@ -67,7 +67,8 @@ describe('priceVisit', () => {
     const entry = lookup('97110')
     const full = round2(entry.work + entry.practiceExpense + entry.malpractice)
     const afterMppr = round2(entry.work + entry.practiceExpense * 0.5 + entry.malpractice)
-    // MPPR first on the second unit, then 85% across the line.
+    // Both reductions are multiplicative, so their order does not change this
+    // number; what the test pins is that both are applied, to the right units.
     expect(result.netAllowed).toBeCloseTo(round2((full + afterMppr) * 0.85), 2)
     expect(result.lines[0]?.modifier).toBe('CQ')
   })
@@ -141,7 +142,7 @@ describe('input validation', () => {
   })
 
   it('rejects minutes that are not a number', () => {
-    expect(() => price([{ code: '97110', minutes: 'abc' }])).toThrow(/minutes must be a finite, non-negative number/)
+    expect(() => price([{ code: '97110', minutes: 'abc' }])).toThrow(/minutes must be a whole, non-negative number/)
   })
 
   it('rejects negative minutes', () => {
@@ -150,6 +151,52 @@ describe('input validation', () => {
 
   it('rejects assistant minutes greater than the line\'s minutes', () => {
     expect(() => price([{ code: '97110', minutes: 15, assistantMinutes: 99 }])).toThrow(/cannot exceed minutes/)
+  })
+
+  it('rejects fractional minutes, which no note records', () => {
+    expect(() => price([{ code: '97110', minutes: 7.5 }, { code: '97140', minutes: 0.5 }])).toThrow(/whole/)
+  })
+
+  it('rejects an untimed flag that disagrees with the fee schedule', () => {
+    // Flagging 20 minutes of 97110 as untimed would drop them out of the
+    // 8-minute total while the line still billed units.
+    expect(() => price([{ code: '97110', minutes: 20, untimed: true }, { code: '97110', minutes: 20 }])).toThrow(/fee schedule lists 97110 as timed/)
+  })
+
+  it('prices same-code lines the same in either order', () => {
+    const a = price([{ code: '97110', minutes: 20 }, { code: '97110', minutes: 20, untimed: false }])
+    const b = price([{ code: '97110', minutes: 20, untimed: false }, { code: '97110', minutes: 20 }])
+    expect(a.totalUnits).toBe(b.totalUnits)
+    expect(a.netAllowed).toBe(b.netAllowed)
+    expect(a.totalTimedMinutes).toBe(40)
+    expect(a.totalUnits).toBe(3)
+  })
+
+  it('accepts an evaluation documented without minutes', () => {
+    const result = price([{ code: '97161' }])
+    expect(result.totalUnits).toBe(1)
+    expect(result.netAllowed).toBeGreaterThan(0)
+  })
+
+  it('refuses assistant time on an evaluation instead of pricing it with CQ', () => {
+    expect(() => price([{ code: '97162', minutes: 30, assistantMinutes: 30 }])).toThrow(/furnished by the therapist/)
+    expect(() => price([{ code: '97164', minutes: 0, assistantMinutes: 5 }])).toThrow(/furnished by the therapist/)
+  })
+
+  it('rejects coinsurance written as a percentage', () => {
+    const run = (benefits: unknown) =>
+      priceVisit({ services: [{ code: '97110', minutes: 30 }], payer: medicare, benefits: benefits as never, discipline: 'PT' })
+    expect(() => run({ deductibleRemaining: 0, coinsurance: 20 })).toThrow(/between 0 and 1/)
+    expect(() => run({ deductibleRemaining: 0 })).toThrow(/coinsurance/)
+    expect(() => run({ deductibleRemaining: 0, coinsurance: 0.2, copay: -10 })).toThrow(/copay/)
+    expect(() => run({ deductibleRemaining: -1, coinsurance: 0.2 })).toThrow(/deductibleRemaining/)
+  })
+
+  it('rejects a contract multiplier that would make dollars negative or NaN', () => {
+    const run = (feeScheduleMultiplier: unknown) =>
+      priceVisit({ services: [{ code: '97110', minutes: 30 }], payer: { ...medicare, feeScheduleMultiplier } as never, benefits: metDeductible, discipline: 'PT' })
+    expect(() => run(-1)).toThrow(/positive/)
+    expect(() => run(undefined)).toThrow(/positive/)
   })
 
   it('accepts a well-formed visit', () => {

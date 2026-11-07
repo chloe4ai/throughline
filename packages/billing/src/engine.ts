@@ -3,21 +3,25 @@ import { allocateUnits, type UnitAllocation } from './units.js'
 import { applyMppr } from './mppr.js'
 import { decideModifier, type ModifierDecision } from './modifiers.js'
 import { lookup, round2 } from './fee-schedule.js'
-import { validateServices } from './validate.js'
+import { validateBenefits, validatePayer, validateServices } from './validate.js'
 
 /**
  * Compose the rules into one answer: for this visit, on this plan, what will
  * actually be paid, by whom, and why.
  *
- * Order matters and is not arbitrary:
+ * The pipeline:
  *   1. minutes -> units        (payer's unit rule)
  *   2. units   -> allowed      (fee schedule x contract multiplier)
  *   3. MPPR on the practice-expense slice of the non-top units
  *   4. CQ/CO 15% reduction on assistant-delivered lines
  *   5. split the remainder into plan liability and patient liability
  *
- * Doing 4 before 3, or applying the contract multiplier after MPPR, produces
- * numbers that are close enough to look right and wrong on every claim.
+ * Steps 2-4 are all multiplications, so their relative order does not change
+ * the dollars. What is load-bearing is that every reduction happens BEFORE
+ * step 5: the deductible, copay and coinsurance apply to the reduced allowed
+ * amount, and splitting liability on the gross figure overstates what the
+ * patient owes. Step 1 is load-bearing too, because the unit rule decides how
+ * many units exist before any price is attached.
  */
 
 export interface ClaimLine {
@@ -57,13 +61,17 @@ export interface PriceVisitInput {
 
 export function priceVisit({ services, payer, benefits, discipline }: PriceVisitInput): VisitPricing {
   validateServices(services)
+  validatePayer(payer)
+  validateBenefits(benefits)
   // allocateUnits merges same-code lines, so each allocation's code is unique
   // and filtering MPPR units by code below cannot count a unit twice.
   const allocations = allocateUnits(services, payer)
   const warnings: string[] = []
 
+  // validateServices has already rejected an untimed flag that disagrees with
+  // the fee schedule, so the fee schedule alone decides what counts as timed.
   const timedMinutes = services
-    .filter((s) => !(s.untimed ?? lookup(s.code).untimed))
+    .filter((s) => !lookup(s.code).untimed)
     .reduce((sum, s) => sum + s.minutes, 0)
 
   const billableUnits = allocations.reduce((sum, a) => sum + a.units, 0)
