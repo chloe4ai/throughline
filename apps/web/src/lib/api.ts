@@ -57,7 +57,8 @@ export interface QueueItem {
   unitRule: 'medicare-8-minute' | 'ama-rule-of-eights'
   note: Note | null
   services: Array<{ code: string; minutes: number; assistantMinutes?: number }>
-  pricing: VisitPricing
+  /** null when the engine refused to price the visit; a pricing-error finding says why. */
+  pricing: VisitPricing | null
   findings: ComplianceFinding[]
   billable: boolean
 }

@@ -125,8 +125,8 @@ export function Billing({ queue }: { queue: QueueItem[] }) {
                 <td>{visit.patient}</td>
                 <td>{visit.date}</td>
                 <td>{visit.payer}</td>
-                <td className="num">{visit.pricing.totalUnits}</td>
-                <td className="num">{money(visit.pricing.netAllowed)}</td>
+                <td className="num">{visit.pricing ? visit.pricing.totalUnits : '—'}</td>
+                <td className="num">{visit.pricing ? money(visit.pricing.netAllowed) : '—'}</td>
                 <td>
                   {visit.billable
                     ? <span className="pill ok">ready</span>

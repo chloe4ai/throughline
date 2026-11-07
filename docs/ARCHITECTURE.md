@@ -42,8 +42,7 @@ surfaces when someone reconciles a remittance months later.
 
 ## Order of operations in pricing
 
-This sequence is load-bearing. Reordering it produces numbers that look close
-enough to be believed and are wrong on every claim:
+Two parts of this sequence are load-bearing, and one part is not:
 
 1. Minutes to units, under the payer's unit rule.
 2. Units to allowed dollars, at the contracted multiple of the fee schedule.
@@ -51,6 +50,17 @@ enough to be believed and are wrong on every claim:
    highest-valued one.
 4. CQ/CO assistant reduction across the affected lines.
 5. Patient liability: deductible first, then copay *or* coinsurance, never both.
+
+Step 1 comes first because the unit rule decides how many units exist before
+any price is attached. Step 5 comes last because the deductible, copay and
+coinsurance apply to the *reduced* allowed amount: splitting liability on the
+gross figure overstates what the patient owes on every reduced claim.
+
+Steps 2 to 4 are all multiplications, so swapping them does not change the
+dollars. They are listed in this order because it is the order a remittance
+advice explains them in, not because another order would be wrong. The test
+suite checks the parts that are load-bearing: that units come from the payer's
+rule and that liability is split after every reduction.
 
 ## Testing
 

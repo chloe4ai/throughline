@@ -63,7 +63,10 @@ export function Documentation({ queue }: { queue: QueueItem[] }) {
           <table className="grid">
             <thead><tr><th>Code</th><th className="num">Units</th><th>Modifier</th><th className="num">Allowed</th></tr></thead>
             <tbody>
-              {visit.pricing.lines.map((line) => (
+              {visit.pricing === null && (
+                <tr><td colSpan={4} className="warn-text">Not priced. See the pricing error under Compliance.</td></tr>
+              )}
+              {visit.pricing?.lines.map((line) => (
                 <tr key={line.code}>
                   <td><code>{line.code}</code> <span className="muted">{line.description}</span></td>
                   <td className="num">{line.units}</td>

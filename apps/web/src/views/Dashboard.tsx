@@ -9,8 +9,8 @@ export function Dashboard({
   onJump: (tab: 'Documentation' | 'Billing' | 'Adherence') => void
 }) {
   const held = queue.filter((v) => !v.billable)
-  const heldDollars = held.reduce((sum, v) => sum + v.pricing.netAllowed, 0)
-  const reductions = queue.reduce((sum, v) => sum + v.pricing.reductionTotal, 0)
+  const heldDollars = held.reduce((sum, v) => sum + (v.pricing?.netAllowed ?? 0), 0)
+  const reductions = queue.reduce((sum, v) => sum + (v.pricing?.reductionTotal ?? 0), 0)
   const atRisk = adherence.filter((a) => a.summary.risk === 'at-risk' || a.summary.risk === 'disengaged')
 
   return (
@@ -19,7 +19,7 @@ export function Dashboard({
         <Tile label="Claims held" value={String(held.length)} caption={`${money(heldDollars)} not yet billable`} tone={held.length ? 'warn' : 'ok'} />
         <Tile label="Reductions this week" value={money(reductions)} caption="MPPR and assistant modifiers" />
         <Tile label="Patients off program" value={String(atRisk.length)} caption={`of ${adherence.length} with a home program`} tone={atRisk.length ? 'warn' : 'ok'} />
-        <Tile label="Units documented" value={String(queue.reduce((s, v) => s + v.pricing.totalUnits, 0))} caption="across visits in the queue" />
+        <Tile label="Units documented" value={String(queue.reduce((s, v) => s + (v.pricing?.totalUnits ?? 0), 0))} caption="across visits in the queue" />
       </div>
 
       <div className="panel">
